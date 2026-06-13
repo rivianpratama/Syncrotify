@@ -4,7 +4,7 @@
   <p><strong>Auto-sync Youtube Music playlist into MP3 Player and iPod.</strong></p>
 
   <p>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/rivianpratama/Syncrotify?style=for-the-badge&color=blue" alt="License"/></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"/></a>
     <a href="https://github.com/rivianpratama/Syncrotify/releases"><img src="https://img.shields.io/github/v/release/rivianpratama/Syncrotify?style=for-the-badge&color=purple" alt="Release"/></a>
     <a href="https://github.com/rivianpratama/Syncrotify/actions"><img src="https://img.shields.io/github/actions/workflow/status/rivianpratama/Syncrotify/desktop-build.yml?style=for-the-badge&label=Build" alt="Build Status"/></a>
   </p>
@@ -21,7 +21,7 @@
 
 <hr />
 
-Syncrotify is an Electron-based desktop application designed to sync your YouTube Music playlists directly to local storage, Rockbox-compatible MP3 players, and stock iPods. 
+Syncrotify is an Electron-based desktop application designed to sync your YouTube Music playlists directly to local storage, MP3 players, and stock iPods. 
 
 By utilizing an Electron (React + TypeScript) user interface and a headless Python synchronization engine, Syncrotify delivers a seamless and reliable offline music experience.
 
