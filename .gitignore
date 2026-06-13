@@ -17,3 +17,4 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+/syncrotify_backend.egg-info
