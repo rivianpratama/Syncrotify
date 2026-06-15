@@ -1,6 +1,6 @@
 [project]
 name = "syncrotify-backend"
-version = "2.0.0"
+version = "2.0.1"
 description = "Headless media synchronization backend for Syncrotify."
 requires-python = ">=3.11"
 dependencies = [
@@ -10,7 +10,7 @@ dependencies = [
   "playwright",
   "python-dateutil",
   "requests-cache",
-  "yt-dlp>=2025.03.27",
+  "yt-dlp>=2026.6.9",
   "yt-dlp-ejs>=0.8.0",
   "ytmusicapi>=1.10.2"
 ]

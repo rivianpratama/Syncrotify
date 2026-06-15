@@ -1,6 +1,6 @@
 {
   "name": "syncrotify",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Sync YouTube Music playlists to folders, MP3 players, and iPods.",
   "author": "Syncrotify contributors",
   "main": "dist-electron/electron/main.js",

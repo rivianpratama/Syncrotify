@@ -15,6 +15,7 @@ interface RpcResponse {
 export class PythonSidecar extends EventEmitter {
   private process: ChildProcessWithoutNullStreams | null = null;
   private nextId = 1;
+  private diagnostics: string[] = [];
   private pending = new Map<
     number,
     { resolve: (value: unknown) => void; reject: (error: Error) => void }
@@ -36,6 +37,7 @@ export class PythonSidecar extends EventEmitter {
     const args = app.isPackaged
       ? []
       : ["-m", "syncrotify_backend.desktop_rpc"];
+    this.diagnostics = [];
 
     this.process = spawn(command, args, {
       cwd: app.isPackaged ? resourcesPath : app.getAppPath(),
@@ -53,7 +55,12 @@ export class PythonSidecar extends EventEmitter {
     const lines = createInterface({ input: this.process.stdout });
     lines.on("line", (line) => this.handleLine(line));
     this.process.stderr.on("data", (chunk) => {
-      this.emit("diagnostic", chunk.toString());
+      const diagnostic = chunk.toString().trim();
+      if (diagnostic) {
+        this.diagnostics.push(diagnostic);
+        this.diagnostics = this.diagnostics.slice(-10);
+        this.emit("diagnostic", diagnostic);
+      }
     });
     this.process.on("error", (error) => {
       for (const request of this.pending.values()) {
@@ -64,7 +71,14 @@ export class PythonSidecar extends EventEmitter {
       this.emit("diagnostic", error.message);
     });
     this.process.on("exit", (code) => {
-      const error = new Error(`Syncrotify backend exited with code ${code ?? "unknown"}`);
+      const detail = this.diagnostics.length
+        ? `\n${this.diagnostics.join("\n")}`
+        : "";
+      const normalizedCode =
+        code !== null && code > 0x7fffffff ? code - 0x100000000 : code;
+      const error = new Error(
+        `Syncrotify backend exited with code ${normalizedCode ?? "unknown"}${detail}`
+      );
       for (const request of this.pending.values()) {
         request.reject(error);
       }

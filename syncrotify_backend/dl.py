@@ -336,7 +336,6 @@ class Dl:
 				filename_safe_tags[k] = MV_SEPARATOR_VISUAL.join([ vv if isinstance(vv, str) else vv.decode("utf-8") for vv in v ])
 			else:
 				filename_safe_tags[k] = v
-
 		final_location_folder = [self.get_sanizated_string(i.format(**filename_safe_tags), True) for i in final_location_folder]
 		# Handle empty lists to prevent index errors
 		if not final_location_file: final_location_file = ["{title}"]
@@ -350,20 +349,48 @@ class Dl:
 		return final_location.parent / f"Cover.{self.cover_format}"
 
 	def download(self, video_id, temp_location):
-		ydl_opts = {**self.default_ydl_opts, "format": self.itag, "outtmpl": str(temp_location)}
+		temp_base = temp_location.with_suffix("")
+		ydl_opts = {
+			**self.default_ydl_opts,
+			"format": self.itag,
+			"outtmpl": str(temp_base) + ".%(ext)s",
+		}
 		if self.cookies_location is not None:
 			ydl_opts["cookiefile"] = str(self.cookies_location)
 		with YoutubeDL(ydl_opts) as ydl:
-			ydl.download("music.youtube.com/watch?v=" + video_id)
+			result = ydl.download(["https://music.youtube.com/watch?v=" + video_id])
+		if result != 0:
+			raise RuntimeError(
+				f"yt-dlp failed to download {video_id} with exit code "
+				f"{self.normalize_exit_code(result)}"
+			)
+
+		actual_files = [
+			path
+			for path in temp_location.parent.glob(f"{temp_base.name}.*")
+			if path.is_file() and path.suffix not in {".part", ".ytdl"}
+		]
+		if not actual_files:
+			raise FileNotFoundError(
+				f"yt-dlp reported success but produced no audio file for {video_id}"
+			)
+		actual_file = max(actual_files, key=lambda path: path.stat().st_mtime_ns)
+		if actual_file.resolve() != temp_location.resolve():
+			if temp_location.exists():
+				temp_location.unlink()
+			shutil.move(str(actual_file), str(temp_location))
 
 	def download_souncloud(self, url, temp_location):
 		ydl_opts = {**self.default_ydl_opts, "format": "mp3", "outtmpl": str(temp_location)}
 		if self.cookies_location is not None:
 			ydl_opts["cookiefile"] = str(self.cookies_location)
 		with YoutubeDL(ydl_opts) as ydl:
-			ydl.download(url)
+			ydl.download([url])
 
 	def fixup(self, temp_location, fixed_location):
+		if not Path(temp_location).is_file():
+			raise FileNotFoundError(f"Downloaded audio file is missing: {temp_location}")
+
 		# Determine conversion needs
 		input_codec = self.get_audio_codec(temp_location)
 		target_fmt = self.target_format
@@ -407,9 +434,17 @@ class Dl:
 		try:
 			subprocess.run(cmd_args, check=True, startupinfo=startupinfo)
 		except subprocess.CalledProcessError as e:
-			logger.error(f"FFmpeg fixup failed with exit code {e.returncode}")
-			# We already caught generic exception in background.py but logging here helps
-			raise
+			exit_code = self.normalize_exit_code(e.returncode)
+			logger.error(f"FFmpeg fixup failed with exit code {exit_code}")
+			raise RuntimeError(
+				f"FFmpeg fixup failed with exit code {exit_code}"
+			) from e
+
+	@staticmethod
+	def normalize_exit_code(code):
+		if code is not None and code > 0x7fffffff:
+			return code - 0x100000000
+		return code
 
 	def move_to_final_location(self, fixed_location, final_location):
 		final_location.parent.mkdir(parents=True, exist_ok=True)
